@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interactive Button Layout</title>
+ <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dark Mode Toggle</title>
+  <link rel="stylesheet" href="style.css">
     <style>
         body {
             background: linear-gradient(to right, #dfe9f3, #ffffff);
@@ -17,13 +21,6 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            transition: background 0.3s, color 0.3s;
-        }
-
-        /* Dark Mode */
-        body.dark-mode {
-            background: linear-gradient(to right, #2e3b4e, #1c1e29);
-            color: white;
         }
 
         h1 {
@@ -158,6 +155,36 @@
             background-color: maroon;
         }
 
+        .congratulation-message {
+            position: fixed;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4CAF50;
+            color: white;
+            font-size: 2rem;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            animation: bounceIn 2s forwards;
+            text-align: center;
+        }
+
+        @keyframes bounceIn {
+            0% {
+                transform: translateX(-50%) scale(0);
+                opacity: 0;
+            }
+            60% {
+                transform: translateX(-50%) scale(1.1);
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(-50%) scale(1);
+            }
+        }
+
         .level-indicator {
             position: fixed;
             top: 30%;
@@ -208,20 +235,6 @@
             color: black;
         }
 
-        /* Dark Mode Toggle Button */
-        .dark-mode-toggle {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            background-color: #333;
-            color: white;
-            border: none;
-            padding: 10px;
-            font-size: 1.5rem;
-            cursor: pointer;
-            border-radius: 10px;
-            z-index: 2;
-        }
     </style>
 </head>
 <body>
@@ -244,29 +257,15 @@
 
     <button class="toggle-slow-button" id="toggleSlowButton" onclick="toggleSlowDelete()">Slow</button>
 
-    <!-- Dark Mode Toggle Button -->
-    <button class="dark-mode-toggle" id="darkModeToggle" onclick="toggleDarkMode()">🌙</button>
-
     <script>
         let currentNumber = 1;
         let autoclickerEnabled = false;
         let autoclickerInterval;
         let autoScrollerEnabled = false;
         let autoScrollerInterval;
-        let firstButtonColor = null;
-        let buttonColors = {1: ''};
-        let slowDeleteEnabled = true;
-
-        // Function to toggle dark mode
-        function toggleDarkMode() {
-            document.body.classList.toggle('dark-mode');
-            const toggleButton = document.getElementById('darkModeToggle');
-            if (document.body.classList.contains('dark-mode')) {
-                toggleButton.innerHTML = '🌕'; 
-            } else {
-                toggleButton.innerHTML = '🌙'; 
-            }
-        }
+        let firstButtonColor = null; // Store the color for the first button
+        let buttonColors = {1: ''}; // Store color for each button, starting with button 1
+        let slowDeleteEnabled = true; // Default slow delete is enabled
 
         // Function to generate random color
         function getRandomColor() {
@@ -280,6 +279,21 @@
 
         // Function to add a new button
         function addNewButton(numberClicked) {
+            // Change win condition to 150
+            if (numberClicked === 150) {
+                showCongratulations();
+            }
+
+            // Show level indicator for reaching button 5
+            if (currentNumber === 5) {
+                document.getElementById('levelIndicator').style.display = 'block';
+            }
+
+            // Fade out the level indicator after button 8 is unlocked
+            if (currentNumber === 8) {
+                document.getElementById('levelIndicator').classList.add('fade-out');
+            }
+
             if (numberClicked === currentNumber) {
                 currentNumber++;
                 const newButtonContainer = document.createElement('div');
@@ -291,6 +305,7 @@
                 newButton.textContent = currentNumber;
                 newButton.setAttribute('onclick', `addNewButton(${currentNumber})`);
 
+                // Set the random color for the new button, and save it in the buttonColors object
                 const randomColor = getRandomColor();
                 buttonColors[currentNumber] = randomColor;
                 newButton.style.backgroundColor = randomColor;
@@ -304,8 +319,24 @@
                 newButtonContainer.appendChild(closeButton);
                 
                 document.getElementById('buttonsContainer').appendChild(newButtonContainer);
+
                 updateHighestButton();
+                toggleDeleteAllButtonVisibility(true);
             }
+        }
+
+        // Function to show congratulatory message
+        function showCongratulations() {
+            const congratsMessage = document.createElement('div');
+            congratsMessage.classList.add('congratulation-message');
+            congratsMessage.textContent = 'Congratulations! You Win!';
+
+            document.body.appendChild(congratsMessage);
+
+            // Remove message after 5 seconds
+            setTimeout(() => {
+                congratsMessage.remove();
+            }, 5000);
         }
 
         // Function to remove buttons
@@ -322,7 +353,7 @@
                             document.getElementById('helpButton').style.display = 'block';
                             toggleDeleteAllButtonVisibility(false);
                         }
-                    }, 500);
+                    }, 500); // 500ms fade-out duration
                 } else {
                     buttonContainer.remove();
                     currentNumber = buttonNumber - 1;
@@ -335,81 +366,149 @@
             }
         }
 
-        // Function to toggle slow delete
-        function toggleSlowDelete() {
-            slowDeleteEnabled = !slowDeleteEnabled;
-            const button = document.getElementById('toggleSlowButton');
-            button.classList.toggle('off');
-            button.textContent = slowDeleteEnabled ? 'Slow' : 'Fast';
-        }
-
-        // Update the highest button visible
+        // Function to update the highest number button
         function updateHighestButton() {
-            document.querySelectorAll('.number-button').forEach(button => {
-                if (parseInt(button.textContent) === currentNumber) {
+            const buttons = document.querySelectorAll('.number-button');
+            buttons.forEach((button, index) => {
+                const closeButton = button.nextElementSibling;
+                if (index === buttons.length - 1) {
+                    // Highest button gets white background
                     button.classList.add('active-button');
+                    button.style.backgroundColor = 'white';
+                    closeButton.style.backgroundColor = 'white';
+                    closeButton.style.pointerEvents = 'auto'; // Enable clickability for the highest button's close button
                 } else {
                     button.classList.remove('active-button');
+                    // Do not change the first button's color after initial load
+                    if (button.textContent != '1') {
+                        button.style.backgroundColor = buttonColors[parseInt(button.textContent)] || getRandomColor();
+                    }
+                    closeButton.style.backgroundColor = 'black';
+                    closeButton.style.pointerEvents = 'none'; // Disable clickability for non-highest button's close button
                 }
             });
         }
 
-        // Restore buttons to the initial state
-        function restoreButtons() {
-            const buttonsContainer = document.getElementById('buttonsContainer');
-            buttonsContainer.innerHTML = '';
-            currentNumber = 1;
-            addNewButton(1);
-            document.getElementById('helpButton').style.display = 'none';
-        }
-
-        // Toggle autoscroller
-        function toggleAutoScroller() {
-            if (autoScrollerEnabled) {
-                clearInterval(autoScrollerInterval);
-                document.getElementById('autoscrollerButton').textContent = 'Enable Auto-Scroller';
-                autoScrollerEnabled = false;
+        // Function to toggle delete button visibility
+        function toggleDeleteAllButtonVisibility(isVisible) {
+            const deleteAllButton = document.getElementById('deleteAllButton');
+            if (isVisible && currentNumber > 0) {
+                deleteAllButton.style.display = 'block';
             } else {
-                autoScrollerInterval = setInterval(() => {
-                    window.scrollBy(0, 1);
-                }, 100); 
-                document.getElementById('autoscrollerButton').textContent = 'Disable Auto-Scroller';
-                autoScrollerEnabled = true;
+                deleteAllButton.style.display = 'none';
             }
         }
 
-        // Toggle autoclicker
+        // Function to toggle the autoclicker
         function toggleAutoclicker() {
+            autoclickerEnabled = !autoclickerEnabled;
+            const autoclickerButton = document.getElementById('autoclickerButton');
             if (autoclickerEnabled) {
-                clearInterval(autoclickerInterval);
-                document.getElementById('autoclickerButton').textContent = 'Enable Autoclicker';
-                autoclickerEnabled = false;
+                autoclickerButton.style.backgroundColor = 'green';
+                startAutoclicker();
             } else {
-                autoclickerInterval = setInterval(() => {
-                    const activeButton = document.querySelector('.active-button');
-                    if (activeButton) {
-                        activeButton.click();
-                    }
-                }, 1000); 
-                document.getElementById('autoclickerButton').textContent = 'Disable Autoclicker';
-                autoclickerEnabled = true;
+                autoclickerButton.style.backgroundColor = 'red';
+                stopAutoclicker();
             }
         }
 
-        // Delete all buttons
+        // Start the autoclicker
+        function startAutoclicker() {
+            autoclickerInterval = setInterval(() => {
+                const activeButton = document.querySelector('.active-button');
+                if (activeButton) {
+                    activeButton.click();
+                }
+            }, 500);
+        }
+
+        // Stop the autoclicker
+        function stopAutoclicker() {
+            clearInterval(autoclickerInterval);
+        }
+
+        // Function to toggle auto-scrolling
+        function toggleAutoScroller() {
+            autoScrollerEnabled = !autoScrollerEnabled;
+            const autoscrollerButton = document.getElementById('autoscrollerButton');
+            if (autoScrollerEnabled) {
+                autoscrollerButton.style.backgroundColor = 'green';
+                startAutoScroller();
+            } else {
+                autoscrollerButton.style.backgroundColor = 'red';
+                stopAutoScroller();
+            }
+        }
+
+        // Start auto-scrolling
+        function startAutoScroller() {
+            autoScrollerInterval = setInterval(() => {
+                window.scrollBy(0, 31);
+            }, 50);
+        }
+
+        // Stop auto-scrolling
+        function stopAutoScroller() {
+            clearInterval(autoScrollerInterval);
+        }
+
+        // Function to delete all buttons
         function deleteAllButtons() {
             const buttons = document.querySelectorAll('.button-with-x');
-            buttons.forEach(button => button.remove());
+            buttons.forEach(button => {
+                button.remove();
+            });
             currentNumber = 0;
-            document.getElementById('helpButton').style.display = 'none';
+            updateHighestButton();
+            toggleDeleteAllButtonVisibility(false);
+            document.getElementById('helpButton').style.display = 'block';
         }
 
-        // Toggle delete-all button visibility
-        function toggleDeleteAllButtonVisibility(visible) {
-            const deleteButton = document.getElementById('deleteAllButton');
-            deleteButton.style.display = visible ? 'block' : 'none';
+        // Function to restore button 1 and hide the help button
+        function restoreButtons() {
+            if (currentNumber === 0) {
+                currentNumber = 1;
+
+                const newButtonContainer = document.createElement('div');
+                newButtonContainer.classList.add('button-with-x');
+                newButtonContainer.setAttribute('id', 'button1');
+                
+                const newButton = document.createElement('button');
+                newButton.classList.add('number-button');
+                newButton.textContent = '1';
+                newButton.setAttribute('onclick', `addNewButton(1)`);
+
+                const closeButton = document.createElement('button');
+                closeButton.classList.add('close-button');
+                closeButton.textContent = '❌';
+                closeButton.setAttribute('onclick', `removeButtons(1)`);
+
+                newButtonContainer.appendChild(newButton);
+                newButtonContainer.appendChild(closeButton);
+                
+                document.getElementById('buttonsContainer').appendChild(newButtonContainer);
+                toggleDeleteAllButtonVisibility(true);
+                updateHighestButton();
+
+                // Make the restore button disappear after 0.05 seconds
+                setTimeout(() => {
+                    document.getElementById('helpButton').style.display = 'none';
+                }, 50);  // 50ms (0.05 seconds)
+            }
+        }
+
+        // Function to toggle slow delete mode
+        function toggleSlowDelete() {
+            slowDeleteEnabled = !slowDeleteEnabled;
+            const toggleButton = document.getElementById('toggleSlowButton');
+            if (slowDeleteEnabled) {
+                toggleButton.classList.remove('off');
+                toggleButton.innerHTML = 'Slow';
+            } else {
+                toggleButton.classList.add('off');
+                toggleButton.innerHTML = 'Fast';
+            }
         }
     </script>
-
 </body>
 </html>
